@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Taskify</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        margin: 0;
+        padding: 0;
+      }
+
+      .inputcontainer {
+        margin-bottom: 20px;
+        display: flex;
+        gap: 10px;
+      }
+
+      input[type="text"] {
+        padding: 10px;
+        font-size: 16px;
+        border: 2px solid #ccc;
+        border-radius: 5px;
+        width: 300px;
+      }
+
+      button {
+        padding: 10px 15px;
+        font-size: 16px;
+        color: white;
+        background-color: #007bff;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background-color: #0056b3;
+      }
+
+      .task-container {
+        width: 50%;
+        max-width: 500px;
+        background-color: white;
+        border: 1px solid #ccc;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+      }
+
+      .task-container div {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px solid #ddd;
+      }
+
+      .task-container div:last-child {
+        border-bottom: none;
+      }
+
+      h3 {
+        margin: 0;
+        font-size: 18px;
+        word-break: break-word;
+        max-width: 60%;
+      }
+
+      .task-container button {
+        padding: 5px 10px;
+        font-size: 14px;
+        margin-left: 10px;
+        border-radius: 5px;
+      }
+
+      .task-container button.update {
+        background-color: #28a745;
+        color: white;
+      }
+
+      .task-container button.update:hover {
+        background-color: #218838;
+      }
+
+      .task-container button.delete {
+        background-color: #dc3545;
+        color: white;
+      }
+
+      .task-container button.delete:hover {
+        background-color: #c82333;
+      }
+
+      input[type="text"].edit {
+        border: 2px solid #007bff;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="inputcontainer">
+      <input type="text" placeholder="Enter Task" />
+      <button>Add Task</button>
+    </div>
+    <div class="task-container"></div>
+
+    <script>
+      const addBtn = document.querySelector("button");
+      addBtn.addEventListener("click", async () => {
+        const Task = document.querySelector("input").value;
+        const response = await axios.post("http://localhost:3000/add", {
+          Task,
+          id: Date.now(),
+        });
+        onload();
+      });
+
+      async function onload() {
+        const Task_arr = await axios.get("http://localhost:3000/get");
+        const tasks = document.querySelector(".task-container");
+        tasks.innerHTML = "";
+        Task_arr.data.map((todo) => {
+          const task_div = document.createElement("div");
+
+          const task_content = document.createElement("h3");
+          const update = document.createElement("button");
+          update.setAttribute('id','update');
+          update.classList.add('update');
+
+          const delete_task = document.createElement("button");
+          delete_task.classList.add('delete');
+
+          update.innerHTML = "Update";
+          delete_task.innerHTML = "Delete";
+          task_div.setAttribute("id", `${todo.id}`);
+          task_content.innerHTML = todo.Task;
+          update.addEventListener("click", () => update_todo(todo.id));
+          delete_task.addEventListener("click", () => delete_todo(todo.id));
+
+          task_div.appendChild(task_content);
+          task_div.appendChild(update);
+          task_div.appendChild(delete_task);
+          tasks.appendChild(task_div);
+        });
+      }
+
+      async function update_todo(id) {
+        const update_div = document.getElementById(id);
+        const update_btn = update_div.querySelector('#update');
+        update_btn.style.display = 'none';
+
+        const task_content = update_div.querySelector("h3");
+          
+        const newInput = document.createElement("input");
+        const save_btn = document.createElement("button");
+
+        newInput.type = "text";
+        newInput.classList.add('edit');
+        newInput.value = task_content.innerText;
+
+        update_div.replaceChild(newInput, task_content);
+
+        save_btn.innerHTML = "Save";
+        update_div.appendChild(save_btn);
+
+        save_btn.addEventListener("click", async () => {
+          const updated_task = newInput.value;
+          const response = await axios.put("http://localhost:3000/update", {
+            updated_task,
+            id,
+          });
+
+          task_content.innerHTML = updated_task;
+          update_div.replaceChild(task_content, newInput);
+
+          update_div.removeChild(save_btn);
+          update_btn.style.display = 'inline';
+        });
+      }
+
+      async function delete_todo(id) {
+        const response = await axios.delete('http://localhost:3000/delete', {
+          data: { id }
+        });
+
+        onload();
+      }
+
+      onload();
+    </script>
+  </body>
+</html>
